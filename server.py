@@ -200,7 +200,6 @@ async def supply_workers():
         asks_session = asks.Session(connections=42)
         asks_session.base_location = "http://127.0.0.1:10000"
         asks_session.endpoint = "/api/engine/v1/"
-        #nursery.start_soon(supply_worker, g_lock, asks_session)
         every_1000 = 0
         while True:
 
