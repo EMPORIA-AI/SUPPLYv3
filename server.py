@@ -34,6 +34,9 @@ from quart_schema import QuartSchema, validate_request, validate_response
 
 from pydantic.json import pydantic_encoder
 
+from common.computersays import *
+cs = ComputerSays()
+
 from dotenv import load_dotenv
 load_dotenv(verbose=True)
 
@@ -228,21 +231,30 @@ async def app_serve(*args):
         nursery.start_soon(supply_workers)
         nursery.start_soon(serve, *args)
 
-config = Config()
-config.bind = [os.getenv("TAIM_SUPPLY_BIND", "0.0.0.0:10002")]
+cs.load("hypercorn_cfg", """
 
-if 0:
-    from pathlib import Path
-    p = Path(f"supply_9.txt");
-    if p.exists(): p.unlink()
-    i = 8
-    while i >= 0:
-        p = Path(f"supply_{i}.txt")
-        if p.exists():
-            p.rename(Path(f"supply_{i+1}.txt"))
-        i -= 1
+```
+
+'01FEPGEGR1F85ED0TMQKRWK00Z id
+
+'0.0.0.0:10000 'TAIM_BIND os_getenv 'bind !
+
+""")
+
+config = Config()
+config.bind = [cs.hypercorn_cfg['bind']]
+
+from pathlib import Path
+p = Path(f"supply_9.txt");
+if p.exists(): p.unlink()
+i = 8
+while i >= 0:
+    p = Path(f"supply_{i}.txt")
+    if p.exists():
+        p.rename(Path(f"supply_{i+1}.txt"))
+    i -= 1
 
 from loggify import Loggify
-with Loggify("supply_0.txt"):
+with Loggify("server_0.txt"):
     trio.run(app_serve, app, config)
 

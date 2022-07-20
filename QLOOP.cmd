@@ -1,7 +1,7 @@
 @echo off
 :main
 cls
-q supply.py g\*.py routes\*.py common\*.py
+q server.py g\*.py routes\*.py common\*.py
 rem python -m cProfile -s ncalls server.py | list /s
 rem hypercorn server.py
 pause
