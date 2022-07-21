@@ -19,9 +19,9 @@ __banner__ = """
 
 """ # __banner__
 
-from cubed4th import FORTH
-
 import g, os, re, rich, trio, toml, asks, redio, simplejson
+
+from cubed4th import FORTH
 
 import zlib, pickle, sqlite3, pendulum, random
 
