@@ -37,9 +37,6 @@ from pydantic.json import pydantic_encoder
 from common.computersays import *
 cs = ComputerSays()
 
-from dotenv import load_dotenv
-load_dotenv(verbose=True)
-
 app = QuartTrio("TAIM_CONFIG")
 QuartSchema(app, version="0.42.10", title="")
 
@@ -47,7 +44,6 @@ from common import *
 
 import routes.supply
 app.register_blueprint(routes.supply.blueprint)
-
 
 async def supply_bid(handle, asks_session):
 
@@ -195,10 +191,19 @@ async def supply_worker(g_lock, asks_session):
 
 async def supply_workers():
 
+    print("C")
+    print(cs.config)
+    print("D")
+
     async with trio.open_nursery() as nursery:
         g_lock = trio.Lock()
         asks_session = asks.Session(connections=42)
-        asks_session.base_location = "http://127.0.0.1:10000"
+
+        ENV = cs.config.get("TAIM_ENV", "")
+        if ENV == "127":
+            asks_session.base_location = "http://127.0.0.1:10000"
+        else:
+            asks_session.base_location = f"https://z-engine{ENV}-emporia.enscaled.sg"
         asks_session.endpoint = "/api/engine/v1/"
         every_1000 = 0
         while True:
@@ -236,7 +241,7 @@ cs.load("hypercorn_cfg", """
 
 '01FEPGEGR1F85ED0TMQKRWK00Z id
 
-'0.0.0.0:10000 'TAIM_BIND os_getenv 'bind !
+'0.0.0.0:80 'TAIM_WWW getenv 'bind !
 
 """)
 
