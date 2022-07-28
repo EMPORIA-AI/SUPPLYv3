@@ -20,10 +20,9 @@ __banner__ = """
 """ # __banner__
 
 import g, os, re, rich, trio, toml, asks, redio, simplejson
+import zlib, pickle, sqlite3, pendulum, random
 
 from cubed4th import FORTH
-
-import zlib, pickle, sqlite3, pendulum, random
 
 from hypercorn.trio import serve
 from hypercorn.config import Config
@@ -34,11 +33,10 @@ from quart_schema import QuartSchema, validate_request, validate_response
 
 from pydantic.json import pydantic_encoder
 
-from common.computersays import *
-cs = ComputerSays()
+from pathlib import Path
 
-app = QuartTrio("TAIM_CONFIG")
-QuartSchema(app, version="0.42.10", title="")
+app = QuartTrio("TAIM-SUPPLY")
+QuartSchema(app, version="2.42.10", title="")
 
 from common import *
 
@@ -74,7 +72,7 @@ async def supply_bid(handle, asks_session):
 
         url = "http://127.0.0.1:10000/api/engine/v1/0.SETUP"
         encoded = json.dumps(setup_data, default=pydantic_encoder)
-        response = await asks_session.post(url, data=encoded, headers=headers)
+        response = await asks_session.post(url, data=encoded, headers=headers, auth=g.auth)
         assert response.status_code < 300
         result = json.loads(response.content)
 
@@ -99,7 +97,7 @@ async def supply_bid(handle, asks_session):
 
     url = "http://127.0.0.1:10000/api/engine/v1/1.ENTER"
     encoded = json.dumps(enter_data, default=pydantic_encoder)
-    response = await asks_session.post(url, data=encoded, headers=headers)
+    response = await asks_session.post(url, data=encoded, headers=headers, auth=g.auth)
     assert response.status_code < 300
     result = json.loads(response.content)
 
@@ -122,7 +120,7 @@ async def supply_bid(handle, asks_session):
 
     url = "http://127.0.0.1:10000/api/engine/v1/2.OFFER"
     encoded = json.dumps(offer_data, default=pydantic_encoder)
-    response = await asks_session.post(url, data=encoded, headers=headers)
+    response = await asks_session.post(url, data=encoded, headers=headers, auth=g.auth)
     assert response.status_code < 300
     result = json.loads(response.content)
 
@@ -143,7 +141,7 @@ async def supply_bid(handle, asks_session):
 
     url = "http://127.0.0.1:10000/api/engine/v1/3.THINK"
     encoded = json.dumps(think_data, default=pydantic_encoder)
-    response = await asks_session.post(url, data=encoded, headers=headers)
+    response = await asks_session.post(url, data=encoded, headers=headers, auth=g.auth)
     assert response.status_code < 300
     result = json.loads(response.content)
 
@@ -168,7 +166,7 @@ async def supply_bid(handle, asks_session):
 
         url = "http://127.0.0.1:10000/api/engine/v1/4.LEAVE"
         encoded = json.dumps(leave_data, default=pydantic_encoder)
-        response = await asks_session.post(url, data=encoded, headers=headers)
+        response = await asks_session.post(url, data=encoded, headers=headers, auth=g.auth)
         assert response.status_code < 300
         result = json.loads(response.content)
 
@@ -191,19 +189,16 @@ async def supply_worker(g_lock, asks_session):
 
 async def supply_workers():
 
-    print("C")
-    print(cs.config)
-    print("D")
-
     async with trio.open_nursery() as nursery:
         g_lock = trio.Lock()
         asks_session = asks.Session(connections=42)
 
-        ENV = cs.config.get("TAIM_ENV", "")
+        ENV = g.cs.config.get("TAIM_ENV", "")
         if ENV == "127":
             asks_session.base_location = "http://127.0.0.1:10000"
         else:
             asks_session.base_location = f"https://z-engine{ENV}-emporia.enscaled.sg"
+
         asks_session.endpoint = "/api/engine/v1/"
         every_1000 = 0
         while True:
@@ -235,27 +230,26 @@ async def app_serve(*args):
         nursery.start_soon(supply_workers)
         nursery.start_soon(serve, *args)
 
-cs.load("hypercorn_cfg", """
+g.cs.load("hypercorn_cfg", """
 
 ```
 
 '01FEPGEGR1F85ED0TMQKRWK00Z id
 
-'0.0.0.0:80 'TAIM_WWW getenv 'bind !
+'0.0.0.0:80 'TAIM_BIND getenv 'bind !
 
 """)
 
 config = Config()
-config.bind = [cs.hypercorn_cfg['bind']]
+config.bind = [g.cs.hypercorn_cfg['bind']]
 
-from pathlib import Path
-p = Path(f"supply_9.txt");
+p = Path(f"server_5.txt");
 if p.exists(): p.unlink()
-i = 8
+i = 5
 while i >= 0:
-    p = Path(f"supply_{i}.txt")
+    p = Path(f"server_{i}.txt")
     if p.exists():
-        p.rename(Path(f"supply_{i+1}.txt"))
+        p.rename(Path(f"server_{i+1}.txt"))
     i -= 1
 
 from loggify import Loggify

@@ -19,6 +19,14 @@ __banner__ = """
 
 """ # __banner__
 
+from asks import BasicAuth
+
+from common.computersays import *
+cs = ComputerSays()
+
+u_pw = (cs.config['username'], cs.config['password'])
+auth = BasicAuth(u_pw)
+
 supply_objects = {}
 
 supply_waiting = []
